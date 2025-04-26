@@ -27,6 +27,11 @@ class HeygenBot:
 
     def __init__(self, chromedriver_path, session_cookie_value):
         self.options = Options()
+        self.options.add_argument("--no-sandbox")
+        self.options.add_argument("--disable-dev-shm-usage")
+        self.options.add_argument("--headless=new")  # 'new' for Chrome 109+
+        self.options.add_argument("--disable-gpu")
+        self.options.add_argument("--window-size=1920,1080")
         self.options.add_argument("--start-maximized")
         self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=self.options)
         self.cookie = {
@@ -88,6 +93,8 @@ class HeygenBot:
         except Exception as e:
             print(f"❌ Script input failed: {e}")
 
+        time.sleep(10)  # Wait for the script to be processed
+
         for name in ["Avatar", avatar_name]:
             try:
                 WebDriverWait(self.driver, 15).until(
@@ -144,6 +151,80 @@ class HeygenBot:
             print("✅ Confirmed 'Submit' in popup")
         except Exception as e:
             print(f"❌ Final submission failed: {e}")
+
+
+    def save_video(self):
+       
+        self.driver.get("https://app.heygen.com/projects")
+        print("✅ Opened Create Video page")
+
+        time.sleep(5)
+        # Try printing out thumbnails
+        # Step 2: Wait for hover-visible menu to appear
+        # Step 2: Wait for the hover-visible container to show up
+        wait = WebDriverWait(self.driver, 15)
+        from selenium.webdriver.common.action_chains import ActionChains
+        try:
+            # STEP 1: Find all video cards
+            video_cards = self.driver.find_elements(By.CLASS_NAME, "video-card")
+            if not video_cards:
+                raise Exception("❌ No video cards found")
+
+            # STEP 2: Get the first video card
+            first_video_card = video_cards[0]
+
+            # STEP 3: Find <img> inside that card and extract src
+            img_tag = first_video_card.find_element(By.TAG_NAME, "img")
+            img_src = img_tag.get_attribute("src")
+
+            if not img_src:
+                raise Exception("❌ No <img src> found inside video card")
+
+            # STEP 4: Extract file name from image URL
+            file_name_with_ext = img_src.split("/")[-1]
+            file_name = ".".join(file_name_with_ext.split(".")[:-1])
+            print("📁 File Name:", file_name)
+
+            # STEP 5: Build video URL and navigate
+            video_url = f"https://app.heygen.com/videos/{file_name}"
+            print("🔗 Navigating to:", video_url)
+            self.driver.get(video_url)
+
+        except Exception as e:
+            print("❌ Error:", e)
+            
+        time.sleep(2)
+
+        try:
+                # Find first download icon (top right or wherever)
+                download_icons = wait.until(EC.presence_of_all_elements_located(
+                    (By.XPATH, "//iconpark-icon[@name='download']")
+                ))
+
+                if len(download_icons) < 1:
+                    raise Exception("❌ No first download icon found.")
+
+                first_icon_parent = download_icons[0].find_element(By.XPATH, "./ancestor::button | ./..")
+                first_icon_parent.click()
+                print("✅ Clicked first Download icon (opened dropdown)")
+
+                time.sleep(1)  # short wait for dropdown menu
+
+                # Find second download icon inside the dropdown
+                download_icons_after_dropdown = self.driver.find_elements(By.XPATH, "//iconpark-icon[@name='download']")
+                if len(download_icons_after_dropdown) < 2:
+                    raise Exception("❌ No second download icon found inside dropdown.")
+
+                second_icon_parent = download_icons_after_dropdown[1].find_element(By.XPATH, "./ancestor::button | ./..")
+                second_icon_parent.click()
+                print("✅ Clicked second Download icon (download started!)")
+
+                time.sleep(10)  # wait for download to start
+
+        except Exception as e:
+            print("❌ Download step failed:", e)
+     
+
 
     def close(self, delay=60):
         """
