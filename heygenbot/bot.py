@@ -139,7 +139,7 @@ class HeygenBot:
             print("✅ Clicked 'Submit'")
         except Exception as e:
             print(f"❌ Submit failed: {e}")
-
+     
         try:
             popup = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Submit Video')]"))
@@ -210,6 +210,27 @@ class HeygenBot:
 
                 time.sleep(1)  # short wait for dropdown menu
 
+                try:
+                    wait = WebDriverWait(self.driver, 15)
+
+                    # Step 1: Find the button (may not be exactly 'button') that shows '1080P'
+                    resolution_element = wait.until(
+                        EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), '1080P')]"))
+                    )
+                    resolution_element.click()
+                    print("✅ Clicked on current resolution (1080P)")
+
+                    time.sleep(1)  # Wait for menu to open
+
+                    # Step 2: Now find the '720P' option and click
+                    resolution_720p = wait.until(
+                        EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), '720P')]"))
+                    )
+                    resolution_720p.click()
+                    print("✅ Selected 720P resolution")
+
+                except Exception as e:
+                    print(f"❌ Failed to change resolution: {e}")
                 # Find second download icon inside the dropdown
                 download_icons_after_dropdown = self.driver.find_elements(By.XPATH, "//iconpark-icon[@name='download']")
                 if len(download_icons_after_dropdown) < 2:
